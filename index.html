@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Perkbox</title>
+<style>
+  :root{
+    --accent:#F0506A;
+    --accent-dark:#D63D55;
+    --accent-soft:#FDE7EB;
+    --navy:#1E2140;
+    --ink:#1E2140;
+    --muted:#6B6F85;
+    --line:#E8E9F0;
+    --bg:#F6F6F9;
+    --card:#FFFFFF;
+    --green:#1FA97A;
+    --green-soft:#E3F6EE;
+    --amber:#F4A734;
+    --amber-soft:#FFF3DF;
+    --blue:#3C6DF0;
+    --blue-soft:#E7EDFD;
+    --purple:#7B4FE0;
+    --purple-soft:#EFE8FC;
+    --cur:"£";
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow:hidden}
+  button{font:inherit;border:0;background:none;color:inherit;cursor:pointer}
+  input,textarea{font:inherit}
+  .app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:520px;margin:0 auto;background:var(--bg)}
+
+  /* ---------- SSO ---------- */
+  .sso{position:absolute;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;transition:opacity .45s ease}
+  .sso.out{opacity:0;pointer-events:none}
+  .wordmark{font-weight:800;letter-spacing:-.04em;font-size:34px;color:var(--navy)}
+  .wordmark b{color:var(--accent)}
+  .sso-step{margin-top:36px;color:var(--muted);font-size:15px;min-height:22px}
+  .spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite;margin-top:28px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .sso-chip{display:inline-flex;align-items:center;gap:8px;margin-top:22px;padding:8px 14px;border-radius:999px;background:var(--bg);color:var(--ink);font-size:13px;font-weight:600}
+  .sso-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .sso-avatar{width:76px;height:76px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:26px;display:flex;align-items:center;justify-content:center;margin-top:24px;overflow:hidden}
+  .sso-avatar img{width:100%;height:100%;object-fit:cover}
+  .sso h2{font-size:22px;margin-top:14px;letter-spacing:-.02em}
+  .sso p{color:var(--muted);margin-top:4px;font-size:14px}
+
+  /* ---------- Shell ---------- */
+  .top{display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;background:#fff;border-bottom:1px solid var(--line)}
+  .top .wordmark{font-size:22px}
+  .top .right{display:flex;gap:10px;align-items:center}
+  .icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative}
+  .icon-btn svg{width:20px;height:20px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .icon-btn .badge{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--accent);border:2px solid #fff}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  .screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:16px;display:none}
+  .screen.on{display:block}
+  .pad{padding:16px 18px}
+  h1{font-size:24px;letter-spacing:-.03em;font-weight:800}
+  h3{font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .link{color:var(--accent);font-weight:600;font-size:13px}
+
+  /* nav */
+  .nav{display:flex;background:#fff;border-top:1px solid var(--line);padding:6px 4px 8px}
+  .nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);padding:4px 0}
+  .nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .nav button.on{color:var(--accent)}
+  .nav button.on svg{fill:var(--accent-soft)}
+
+  /* cards */
+  .card{background:var(--card);border-radius:16px;padding:16px;border:1px solid var(--line)}
+  .points{background:var(--navy);color:#fff;border-radius:18px;padding:18px;display:flex;gap:12px}
+  .points .pt{flex:1}
+  .points .pt + .pt{border-left:1px solid rgba(255,255,255,.14);padding-left:14px}
+  .points .lab{font-size:12px;opacity:.75}
+  .points .val{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-top:2px}
+  .points .val small{font-size:13px;font-weight:600;opacity:.75;margin-left:3px}
+  .points .cta{margin-top:10px;font-size:12px;font-weight:700;color:#FFD2DA}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+  .tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;font-weight:600}
+  .tile .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center}
+  .tile .ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .ic.pink{background:var(--accent-soft);color:var(--accent)}
+  .ic.green{background:var(--green-soft);color:var(--green)}
+  .ic.blue{background:var(--blue-soft);color:var(--blue)}
+  .ic.purple{background:var(--purple-soft);color:var(--purple)}
+  .ic.amber{background:var(--amber-soft);color:var(--amber)}
+  .savings{margin-top:16px;display:flex;align-items:center;gap:14px;background:var(--green-soft);border-radius:16px;padding:14px 16px}
+  .savings .big{font-size:22px;font-weight:800;color:var(--green);letter-spacing:-.03em}
+  .savings .t{font-size:13px;color:var(--ink)}
+  .savings .t span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .section{margin-top:22px}
+  .hscroll{display:flex;gap:12px;overflow-x:auto;padding:12px 18px 4px;margin:0 -18px;scrollbar-width:none}
+  .hscroll::-webkit-scrollbar{display:none}
+  .perk{flex:0 0 150px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .perk .art{height:88px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;letter-spacing:-.03em;color:#fff}
+  .perk .body{padding:10px 11px 12px}
+  .perk .name{font-size:13px;font-weight:700;line-height:1.25}
+  .perk .meta{font-size:11.5px;color:var(--muted);margin-top:4px}
+  .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;margin-top:8px}
+  .pill.pts{background:var(--accent-soft);color:var(--accent)}
+  .pill.free{background:var(--green-soft);color:var(--green)}
+  .pill.disc{background:var(--blue-soft);color:var(--blue)}
+  .feed-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .feed-item:last-child{border-bottom:0}
+  .feed-item .av{width:40px;height:40px;border-radius:50%;flex:0 0 40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff}
+  .feed-item .who{font-size:13.5px;line-height:1.35}
+  .feed-item .who b{font-weight:700}
+  .feed-item .msg{font-size:13.5px;margin-top:5px;line-height:1.4;color:#33364F}
+  .feed-item .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--purple-soft);color:var(--purple)}
+  .tag.pts{background:var(--amber-soft);color:#B9731A}
+  .feed-item .acts{display:flex;gap:16px;margin-top:9px;font-size:12px;color:var(--muted);font-weight:600}
+  .feed-item .acts span{display:flex;align-items:center;gap:4px}
+  .feed-item .acts svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .feed-item .when{font-size:11.5px;color:var(--muted);margin-left:auto}
+
+  /* perks screen */
+  .search{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;color:var(--muted);font-size:14px;margin-top:12px}
+  .search svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .chips{display:flex;gap:8px;overflow-x:auto;margin:12px -18px 0;padding:0 18px 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .grid .perk{flex:none}
+
+  /* detail overlay */
+  .overlay{position:absolute;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column;transform:translateX(100%);transition:transform .3s ease}
+  .overlay.show{display:flex;transform:translateX(0)}
+  .ov-top{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff;border-bottom:1px solid var(--line);font-weight:700;font-size:16px}
+  .ov-body{flex:1;overflow-y:auto}
+  .hero{height:160px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:34px;letter-spacing:-.04em}
+  .cta{display:block;width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;font-size:15.5px;text-align:center}
+  .cta.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .ov-foot{padding:12px 18px 16px;background:#fff;border-top:1px solid var(--line)}
+  .kv{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .kv:last-child{border-bottom:0}
+  .kv span:last-child{font-weight:700}
+  .acc{border-top:1px solid var(--line);padding:14px 0;font-size:14px;font-weight:600;display:flex;justify-content:space-between}
+  .acc svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2}
+  .success{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 28px}
+  .success .tick{width:72px;height:72px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:18px}
+  .success .tick svg{width:36px;height:36px;stroke:currentColor;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .code{margin-top:18px;background:#fff;border:1px dashed var(--line);border-radius:12px;padding:12px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;letter-spacing:.12em;font-weight:700}
+
+  /* forms */
+  .field{margin-top:14px}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .field input,.field textarea,.field select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:15px;color:var(--ink)}
+  .field textarea{min-height:90px;resize:none}
+  .values{display:flex;gap:8px;flex-wrap:wrap}
+  .values .chip.on{background:var(--purple);border-color:var(--purple)}
+  .ptrow{display:flex;gap:8px}
+  .ptrow .chip{flex:1;text-align:center}
+  .ptrow .chip.on{background:var(--accent);border-color:var(--accent)}
+  .fab{position:absolute;right:18px;bottom:92px;z-index:20;background:var(--accent);color:#fff;font-weight:700;font-size:14px;padding:13px 18px;border-radius:999px;box-shadow:0 8px 20px rgba(240,80,106,.35);display:flex;align-items:center;gap:7px}
+  .fab svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round}
+
+  /* wellbeing */
+  .playlist{background:linear-gradient(135deg,#4A3AFF,#8A5CFF);color:#fff;border-radius:18px;padding:18px;margin-top:14px}
+  .playlist .eyebrow{font-size:12px;opacity:.8;font-weight:600}
+  .playlist h3{color:#fff;font-size:20px;margin-top:4px;letter-spacing:-.02em}
+  .playlist p{font-size:13px;opacity:.85;margin-top:6px;line-height:1.4}
+  .playlist .cta{margin-top:14px;background:#fff;color:#4A3AFF;padding:11px;font-size:14px}
+  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+  .cat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center;font-size:12.5px;font-weight:600}
+  .cat .em{font-size:24px;margin-bottom:6px}
+  .vid{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .vid:last-child{border-bottom:0}
+  .vid .thumb{width:104px;height:66px;border-radius:10px;flex:0 0 104px;display:flex;align-items:center;justify-content:center;color:#fff;position:relative}
+  .vid .thumb svg{width:26px;height:26px;fill:#fff;opacity:.9}
+  .vid .thumb .dur{position:absolute;right:6px;bottom:5px;font-size:10px;font-weight:700;background:rgba(0,0,0,.55);padding:2px 5px;border-radius:4px}
+  .vid .t{font-size:14px;font-weight:700;line-height:1.3}
+  .vid .m{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* benefits */
+  .ben{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}
+  .ben .ic{width:46px;height:46px;border-radius:12px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:22px}
+  .ben .t{font-size:14.5px;font-weight:700}
+  .ben .d{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .ben svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;margin-left:auto;flex:0 0 18px}
+
+  .toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;opacity:0;transition:all .3s;z-index:60;white-space:nowrap}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#F6F6F9}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== SSO ===== -->
+  <div class="sso" id="sso">
+    <div class="wordmark">perk<b>box</b></div>
+    <div id="ssoStage">
+      <div class="sso-step" id="ssoText">Signing you in with your work account</div>
+      <div class="spinner" style="margin:28px auto 0"></div>
+      <div class="sso-chip" id="ssoChip"><span class="dot"></span>Single sign-on</div>
+    </div>
+  </div>
+
+  <!-- ===== TOP BAR ===== -->
+  <div class="top">
+    <div class="wordmark">perk<b>box</b></div>
+    <div class="right">
+      <button class="icon-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+        <span class="badge"></span>
+      </button>
+      <div class="avatar" id="avatarTop">RR</div>
+    </div>
+  </div>
+
+  <!-- ===== HOME ===== -->
+  <div class="screen on" id="s-home">
+    <div class="pad">
+      <h1 id="greet">Hi Rachel 👋</h1>
+      <div class="sub" id="companyLine">Here's what's new for you today</div>
+
+      <div class="points" style="margin-top:16px">
+        <div class="pt">
+          <div class="lab">Flexi points</div>
+          <div class="val"><span id="flexiBal">240</span></div>
+          <div class="cta" data-go="perks">Spend on perks ›</div>
+        </div>
+        <div class="pt">
+          <div class="lab">Reward points</div>
+          <div class="val"><span id="rewardBal">150</span><small>≈ <span class="c"></span>15</small></div>
+          <div class="cta" data-go="perks">Choose a reward ›</div>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <button class="tile" data-go="perks"><span class="ic pink"><svg viewBox="0 0 24 24"><path d="M20 12v8H4v-8"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></span>Perks</button>
+        <button class="tile" data-go="recog"><span class="ic purple"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg></span>Recognition</button>
+        <button class="tile" data-go="well"><span class="ic green"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span>Wellbeing</button>
+        <button class="tile" data-go="bens"><span class="ic blue"><svg viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11H3z"/><path d="M9 20v-6h6v6"/></svg></span>Benefits</button>
+      </div>
+
+      <div class="savings">
+        <div class="big"><span class="c"></span>182.40</div>
+        <div class="t">saved so far this year<span>Savings tracker · keep it going</span></div>
+      </div>
+
+      <div class="section">
+        <div class="row"><h3>Featured perks</h3><button class="link" data-go="perks">See all</button></div>
+        <div class="hscroll" id="featured"></div>
+      </div>
+
+      <div class="section">
+        <div class="row"><h3>Recognition</h3><button class="link" data-go="recog">View feed</button></div>
+        <div class="card" style="margin-top:12px;padding:4px 16px" id="homeFeed"></div>
+      </div>
+
+      <div class="section">
+        <div class="row"><h3>This month's wellbeing playlist</h3></div>
+        <div class="playlist" data-go="well" style="cursor:pointer">
+          <div class="eyebrow">October playlist</div>
+          <h3>Sleep better</h3>
+          <p>Short wind-down routines, breathing exercises, and tips for a more restful night.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PERKS ===== -->
+  <div class="screen" id="s-perks">
+    <div class="pad">
+      <div class="row"><h1>Perks</h1><span class="pill pts" style="margin:0"><span id="flexiBal2">240</span> Flexi points</span></div>
+      <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search brands and categories</div>
+      <div class="chips" id="chips"></div>
+      <div class="grid" id="perkGrid"></div>
+    </div>
+  </div>
+
+  <!-- ===== RECOGNITION ===== -->
+  <div class="screen" id="s-recog">
+    <div class="pad">
+      <div class="row"><h1>Recognition</h1></div>
+      <div class="sub">Celebrate great work across the whole company</div>
+      <div class="chips"><span class="chip on">All</span><span class="chip">My team</span><span class="chip">Received</span><span class="chip">Sent</span></div>
+      <div class="card" style="margin-top:14px;padding:4px 16px" id="feed"></div>
+    </div>
+  </div>
+
+  <!-- ===== WELLBEING ===== -->
+  <div class="screen" id="s-well">
+    <div class="pad">
+      <h1>Wellbeing</h1>
+      <div class="sub">Resources for your body, mind, and everyday life</div>
+      <div class="playlist">
+        <div class="eyebrow">October playlist</div>
+        <h3>Sleep better</h3>
+        <p>8 sessions · 42 min total</p>
+        <button class="cta" onclick="toast('Playlist saved')">Start playlist</button>
+      </div>
+      <div class="cats">
+        <div class="cat"><div class="em">🏋️</div>Workouts</div>
+        <div class="cat"><div class="em">🧘</div>Yoga</div>
+        <div class="cat"><div class="em">🤸</div>Pilates</div>
+        <div class="cat"><div class="em">🌙</div>Meditation</div>
+        <div class="cat"><div class="em">🥗</div>Nutrition</div>
+        <div class="cat"><div class="em">💷</div>Money</div>
+      </div>
+      <div class="section">
+        <div class="row"><h3>Continue watching</h3><span class="link">See all</span></div>
+        <div class="card" style="margin-top:12px;padding:2px 16px">
+          <div class="vid"><div class="thumb" style="background:#5A6CFF"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span class="dur">12:40</span></div><div><div class="t">20-minute full-body stretch</div><div class="m">Yoga · Beginner · 8 min left</div></div></div>
+          <div class="vid"><div class="thumb" style="background:#2DB38A"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span class="dur">06:15</span></div><div><div class="t">Box breathing for busy days</div><div class="m">Meditation · All levels</div></div></div>
+          <div class="vid"><div class="thumb" style="background:#F4A734"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span class="dur">18:02</span></div><div><div class="t">Quick weeknight meals under 20 minutes</div><div class="m">Nutrition · Series</div></div></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="row"><h3>Need support now?</h3></div>
+        <div class="card" style="margin-top:12px;display:flex;align-items:center;gap:14px">
+          <div class="ic green" style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 44px;font-size:20px">☎️</div>
+          <div><div style="font-weight:700;font-size:14px">Employee assistance programme</div><div class="sub">Confidential support, 24 hours a day, 7 days a week</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BENEFITS ===== -->
+  <div class="screen" id="s-bens">
+    <div class="pad">
+      <h1>Benefits</h1>
+      <div class="sub">Everything your employer provides, in one place</div>
+      <div style="margin-top:8px">
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--green-soft)">🚲</div><div><div class="t">Cycle to work</div><div class="d">Save up to 42% on a new bike and gear through salary sacrifice</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--blue-soft)">💻</div><div><div class="t">Home and electronics</div><div class="d">Spread the cost of tech and appliances over 12 months</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--purple-soft)">🩺</div><div><div class="t">Online GP</div><div class="d">Book a video appointment with a GP, any time</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--amber-soft)">🚗</div><div><div class="t">Car benefit</div><div class="d">Lease an electric car through your salary</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--accent-soft)">🛡️</div><div><div class="t">Employee assistance programme</div><div class="d">Confidential counselling and practical support, 24/7</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+        <div class="ben" onclick="toast('Opens in the Benefits portal')"><div class="ic" style="background:var(--green-soft)">🦷</div><div><div class="t">Dental and optical cash plan</div><div class="d">Claim back everyday health costs</div></div><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <div class="nav" id="nav">
+    <button class="on" data-go="home"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+    <button data-go="perks"><svg viewBox="0 0 24 24"><path d="M20 12v8H4v-8"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/></svg>Perks</button>
+    <button data-go="recog"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>Recognition</button>
+    <button data-go="well"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Wellbeing</button>
+    <button data-go="bens"><svg viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v11H3z"/><path d="M9 20v-6h6v6"/></svg>Benefits</button>
+  </div>
+
+  <!-- ===== FAB (recognition) ===== -->
+  <button class="fab" id="fab" style="display:none" onclick="openGive()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Give recognition</button>
+
+  <!-- ===== PERK DETAIL ===== -->
+  <div class="overlay" id="ov-perk">
+    <div class="ov-top"><button class="icon-btn" onclick="closeOv('ov-perk')"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button><span id="pdTitle">Perk</span></div>
+    <div class="ov-body">
+      <div class="hero" id="pdHero">BRAND</div>
+      <div class="pad">
+        <h1 id="pdName" style="font-size:21px"></h1>
+        <div class="sub" id="pdCat"></div>
+        <div class="card" style="margin-top:14px;padding:4px 16px">
+          <div class="kv"><span>What you get</span><span id="pdGet"></span></div>
+          <div class="kv"><span>Cost</span><span id="pdCost"></span></div>
+          <div class="kv"><span>Redeem</span><span id="pdHow"></span></div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="acc">How it works<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="acc">Important information<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="acc">Terms and conditions<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="ov-foot"><button class="cta" id="pdCta" onclick="getPerk()">Get this perk</button></div>
+  </div>
+
+  <!-- ===== PERK SUCCESS ===== -->
+  <div class="overlay" id="ov-done">
+    <div class="ov-top"><button class="icon-btn" onclick="closeOv('ov-done');closeOv('ov-perk')"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>Your perk</div>
+    <div class="ov-body">
+      <div class="success">
+        <div class="tick"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></div>
+        <h1 style="font-size:22px">You've got it</h1>
+        <p class="sub" id="doneText" style="margin-top:6px"></p>
+        <div class="code" id="doneCode">PB-7K2M-4QX9</div>
+        <p class="sub" style="margin-top:14px">Saved to your order history. We've also emailed you a copy.</p>
+      </div>
+    </div>
+    <div class="ov-foot"><button class="cta ghost" onclick="closeOv('ov-done');closeOv('ov-perk')">Back to perks</button></div>
+  </div>
+
+  <!-- ===== GIVE RECOGNITION ===== -->
+  <div class="overlay" id="ov-give">
+    <div class="ov-top"><button class="icon-btn" onclick="closeOv('ov-give')"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>Give recognition</div>
+    <div class="ov-body"><div class="pad">
+      <div class="field"><label>Who are you recognising?</label><input id="gWho" placeholder="Search by name" value="Priya Nair"></div>
+      <div class="field"><label>Your message</label><textarea id="gMsg" placeholder="What did they do?">Stepped in to cover the late shift at short notice and kept the whole team calm. Thank you!</textarea></div>
+      <div class="field"><label>Company value</label>
+        <div class="values">
+          <span class="chip on" onclick="pick(this,'.values')">Team player</span>
+          <span class="chip" onclick="pick(this,'.values')">Go the extra mile</span>
+          <span class="chip" onclick="pick(this,'.values')">Customer first</span>
+          <span class="chip" onclick="pick(this,'.values')">Own it</span>
+        </div>
+      </div>
+      <div class="field"><label>Add reward points (optional)</label>
+        <div class="ptrow">
+          <span class="chip" onclick="pick(this,'.ptrow')">None</span>
+          <span class="chip on" onclick="pick(this,'.ptrow')">50</span>
+          <span class="chip" onclick="pick(this,'.ptrow')">100</span>
+          <span class="chip" onclick="pick(this,'.ptrow')">250</span>
+        </div>
+        <div class="sub" style="margin-top:8px">You have 500 points left to give this quarter</div>
+      </div>
+      <div class="field"><label>Visibility</label>
+        <div class="values"><span class="chip on" onclick="pick(this,'#visRow')" id="visRow">Whole company</span><span class="chip">Private</span></div>
+      </div>
+    </div></div>
+    <div class="ov-foot"><button class="cta" onclick="sendRecog()">Send recognition</button></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ---------- config via URL ---------- */
+const q = new URLSearchParams(location.search);
+const cfg = {
+  company: q.get('company') || '',
+  accent: q.get('accent') || '',
+  name: q.get('name') || 'Rachel Raffles',
+  title: q.get('title') || 'Operator',
+  photo: q.get('photo') || '',
+  cur: q.get('currency') || '£',
+  skip: q.get('skip') === '1',
+  flexi: parseInt(q.get('flexi') || '240', 10),
+  reward: parseInt(q.get('reward') || '150', 10)
+};
+if (cfg.accent) { document.documentElement.style.setProperty('--accent', '#' + cfg.accent.replace('#','')); document.documentElement.style.setProperty('--accent-soft', '#' + cfg.accent.replace('#','') + '22'); }
+const first = cfg.name.split(' ')[0];
+const initials = cfg.name.split(' ').map(s => s[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('greet').textContent = 'Hi ' + first + ' 👋';
+if (cfg.company) document.getElementById('companyLine').textContent = cfg.company + " · Here's what's new for you today";
+document.querySelectorAll('.c').forEach(e => e.textContent = cfg.cur);
+const av = document.getElementById('avatarTop');
+av.textContent = initials;
+if (cfg.photo) av.innerHTML = '<img src="' + cfg.photo + '" alt="">';
+
+/* ---------- data ---------- */
+const C = cfg.cur;
+const perks = [
+  {b:'CINEMA', bg:'#1E2140', name:'Cinema tickets from ' + C + '5.99', cat:'Entertainment', get:'Up to 40% off adult tickets', cost:'Free with Perkbox', how:'Buy e-codes in app', kind:'free'},
+  {b:'COFFEE', bg:'#6B4A2B', name:'Free hot drink every week', cat:'Food and drink', get:'1 regular hot drink', cost:'20 Flexi points', how:'Show the code in store', kind:'pts', pts:20},
+  {b:'SUPER\nMARKET', bg:'#2D8F4E', name:C + '5 supermarket voucher', cat:'Groceries', get:C + '5 e-gift card', cost:'55 Flexi points', how:'Instant e-voucher', kind:'pts', pts:55},
+  {b:'STREAM', bg:'#D32F4B', name:'3 months streaming for ' + C + '1', cat:'Entertainment', get:'3-month subscription', cost:'Free with Perkbox', how:'Activate online', kind:'free'},
+  {b:'FASHION', bg:'#3C6DF0', name:C + '5 fashion gift voucher', cat:'Fashion', get:C + '5 e-gift card', cost:'55 Flexi points', how:'Instant e-voucher', kind:'pts', pts:55},
+  {b:'GYM', bg:'#F4A734', name:'Up to 25% off gym memberships', cat:'Health and fitness', get:'Discounted monthly membership', cost:'Free with Perkbox', how:'Sign up via link', kind:'disc', disc:'25% off'},
+  {b:'TRAVEL', bg:'#0EA5B5', name:'10% off hotel stays', cat:'Travel', get:'Discount on worldwide hotels', cost:'Free with Perkbox', how:'Book through portal', kind:'disc', disc:'10% off'},
+  {b:'TECH', bg:'#7B4FE0', name:'8% off tech and electronics', cat:'Tech', get:'Discounted e-gift cards', cost:'Free with Perkbox', how:'Buy e-gift card', kind:'disc', disc:'8% off'},
+  {b:'EAT', bg:'#E04E2B', name:'25% off dining, all day', cat:'Food and drink', get:'Discount off the bill', cost:'Free with Perkbox', how:'Show the code in restaurant', kind:'disc', disc:'25% off'},
+  {b:'FUEL', bg:'#374151', name:'Save on fuel and parking', cat:'Travel', get:'Up to 5p per litre off', cost:'Free with Perkbox', how:'Register your card', kind:'free'}
+];
+const cats = ['All','Food and drink','Groceries','Entertainment','Fashion','Tech','Travel','Health and fitness'];
+const feed = [
+  {av:'#7B4FE0', ini:'MO', from:'Marcus Osei', to:'Priya Nair', msg:'Covered two extra shifts this week without being asked. Absolute star.', tags:['Go the extra mile'], pts:50, when:'2h'},
+  {av:'#1FA97A', ini:'SL', from:'Sofia Lindqvist', to:'the Night team', msg:'Smashed the safety audit with zero findings. Thank you all for the prep.', tags:['Own it'], pts:0, when:'5h'},
+  {av:'#F0506A', ini:'JK', from:'Jamie Kerr', to:cfg.name, msg:'Spotted an issue before it became a problem and sorted it on the spot. Great instincts.', tags:['Customer first'], pts:100, when:'1d'},
+  {av:'#3C6DF0', ini:'AB', from:'Aisha Bello', to:'Tom Walsh', msg:'Welcomed the new starters and made sure nobody ate lunch alone. Team player through and through.', tags:['Team player'], pts:0, when:'2d'}
+];
+
+/* ---------- render ---------- */
+function perkCard(p, i){
+  const pill = p.kind==='pts' ? '<span class="pill pts">'+p.pts+' points</span>' : p.kind==='disc' ? '<span class="pill disc">'+p.disc+'</span>' : '<span class="pill free">Free</span>';
+  return '<div class="perk" onclick="openPerk('+i+')"><div class="art" style="background:'+p.bg+'">'+p.b.replace('\n','<br>')+'</div><div class="body"><div class="name">'+p.name+'</div><div class="meta">'+p.cat+'</div>'+pill+'</div></div>';
+}
+document.getElementById('featured').innerHTML = perks.slice(0,5).map(perkCard).join('');
+function renderGrid(cat){
+  document.getElementById('perkGrid').innerHTML = perks.map((p,i)=>[p,i]).filter(([p])=>cat==='All'||p.cat===cat).map(([p,i])=>perkCard(p,i)).join('');
+}
+document.getElementById('chips').innerHTML = cats.map((c,i)=>'<span class="chip'+(i===0?' on':'')+'" onclick="pickCat(this)">'+c+'</span>').join('');
+function pickCat(el){ pick(el,'#chips'); renderGrid(el.textContent); }
+renderGrid('All');
+
+function feedItem(f){
+  const tags = f.tags.map(t=>'<span class="tag">'+t+'</span>').join('') + (f.pts?'<span class="tag pts">+'+f.pts+' points</span>':'');
+  return '<div class="feed-item"><div class="av" style="background:'+f.av+'">'+f.ini+'</div><div style="flex:1"><div class="who" style="display:flex"><span><b>'+f.from+'</b> recognised <b>'+f.to+'</b></span><span class="when">'+f.when+'</span></div><div class="msg">'+f.msg+'</div><div class="tags">'+tags+'</div><div class="acts"><span><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>'+(f.likes||(3+Math.floor(Math.random()*9)))+'</span><span><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H8l-5 3 1.5-5A8 8 0 1 1 21 12z"/></svg>'+(f.c||Math.floor(Math.random()*3))+'</span></div></div></div>';
+}
+function renderFeed(){
+  document.getElementById('feed').innerHTML = feed.map(feedItem).join('');
+  document.getElementById('homeFeed').innerHTML = feed.slice(0,2).map(feedItem).join('');
+}
+renderFeed();
+
+/* ---------- nav ---------- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on', s.id==='s-'+id));
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.go===id));
+  document.getElementById('fab').style.display = id==='recog' ? 'flex' : 'none';
+  document.getElementById('s-'+id).scrollTop = 0;
+}
+document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',e=>{go(el.dataset.go)}));
+
+function pick(el, scopeSel){
+  const scope = el.closest(scopeSel) || el.parentElement;
+  scope.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ---------- overlays ---------- */
+let cur = null;
+function openPerk(i){
+  cur = perks[i];
+  document.getElementById('pdTitle').textContent = cur.cat;
+  const hero = document.getElementById('pdHero'); hero.style.background = cur.bg; hero.innerHTML = cur.b.replace('\n','<br>');
+  document.getElementById('pdName').textContent = cur.name;
+  document.getElementById('pdCat').textContent = cur.cat;
+  document.getElementById('pdGet').textContent = cur.get;
+  document.getElementById('pdCost').textContent = cur.cost;
+  document.getElementById('pdHow').textContent = cur.how;
+  document.getElementById('pdCta').textContent = cur.kind==='pts' ? 'Get this perk · '+cur.pts+' points' : 'Get this perk';
+  openOv('ov-perk');
+}
+function getPerk(){
+  if (cur.kind==='pts'){
+    cfg.flexi -= cur.pts;
+    document.getElementById('flexiBal').textContent = cfg.flexi;
+    document.getElementById('flexiBal2').textContent = cfg.flexi;
+    document.getElementById('doneText').textContent = cur.pts+' Flexi points spent. '+cfg.flexi+' left.';
+  } else {
+    document.getElementById('doneText').textContent = 'Your '+cur.name.toLowerCase()+' perk is ready to use.';
+  }
+  document.getElementById('doneCode').textContent = 'PB-'+rnd(4)+'-'+rnd(4);
+  openOv('ov-done');
+}
+function rnd(n){ const s='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let o=''; for(let i=0;i<n;i++) o+=s[Math.floor(Math.random()*s.length)]; return o; }
+function openOv(id){ const o=document.getElementById(id); o.style.display='flex'; requestAnimationFrame(()=>o.classList.add('show')); }
+function closeOv(id){ const o=document.getElementById(id); o.classList.remove('show'); setTimeout(()=>{o.style.display='none'},300); }
+function openGive(){ openOv('ov-give'); }
+function sendRecog(){
+  const who = document.getElementById('gWho').value || 'a colleague';
+  const msg = document.getElementById('gMsg').value;
+  const val = document.querySelector('.values .chip.on')?.textContent || 'Team player';
+  const ptsTxt = document.querySelector('.ptrow .chip.on')?.textContent || 'None';
+  const pts = ptsTxt==='None' ? 0 : parseInt(ptsTxt,10);
+  feed.unshift({av:'var(--accent)', ini:initials, from:cfg.name, to:who, msg:msg, tags:[val], pts:pts, when:'Just now', likes:0, c:0});
+  renderFeed();
+  closeOv('ov-give');
+  toast('Recognition sent to '+who.split(' ')[0]);
+  go('recog');
+}
+let tt;
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* ---------- SSO sequence ---------- */
+(function(){
+  const sso = document.getElementById('sso');
+  if (cfg.skip){ sso.classList.add('out'); return; }
+  const text = document.getElementById('ssoText');
+  const steps = ['Signing you in with your work account','Verifying with your identity provider','Loading your perks and benefits'];
+  let i = 0;
+  const iv = setInterval(()=>{ i++; if (i<steps.length) text.textContent = steps[i]; }, 900);
+  setTimeout(()=>{
+    clearInterval(iv);
+    const avatar = cfg.photo ? '<img src="'+cfg.photo+'" alt="">' : initials;
+    document.getElementById('ssoStage').innerHTML = '<div class="sso-avatar" style="margin:24px auto 0">'+avatar+'</div><h2>Welcome back, '+first+'</h2><p>'+cfg.title+(cfg.company?' · '+cfg.company:'')+'</p>';
+    setTimeout(()=>sso.classList.add('out'), 1300);
+  }, 2900);
+})();
+</script>
+</body>
+</html>
